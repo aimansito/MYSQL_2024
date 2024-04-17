@@ -1,11 +1,14 @@
 -- ejercicios left y right join
 use empresaclase;
+-- no muestra las que tienen 0
 select nomde, count(nomem)
 from departamentos
 right join empleados on empleados.numde = departamentos.numde
 group by nomde
 HAVING count(nomem)>=0;
 
+
+-- muestra las que tienen 0 
 select nomde, count(nomem)
 from departamentos
 left join empleados on empleados.numde = departamentos.numde
