@@ -1,0 +1,86 @@
+-- Crear la base de datos COLONIAS
+CREATE DATABASE COLONIAS;
+USE COLONIAS;
+
+-- Crear la tabla Casa de Colonias
+CREATE TABLE CasaColonias (
+    Codigo INT PRIMARY KEY,
+    Nombre VARCHAR(255),
+    Direccion VARCHAR(255),
+    Telefono VARCHAR(20),
+    Categoria ENUM('A', 'B', 'C', 'D', 'E'),
+    CONSTRAINT CK_Categoria CHECK (Categoria IN ('A', 'B', 'C', 'D', 'E'))
+);
+
+-- Crear la tabla Cliente
+CREATE TABLE Cliente (
+    NIF CHAR(9) PRIMARY KEY,
+    Nombre VARCHAR(255),
+    PersonaContacto VARCHAR(255),
+    Email VARCHAR(255),
+    Telefono VARCHAR(20),
+    TipoCliente ENUM('escuela', 'particular') DEFAULT 'escuela',
+    CONSTRAINT CK_TipoCliente CHECK (TipoCliente IN ('escuela', 'particular'))
+);
+
+-- Crear la tabla Habitacion
+CREATE TABLE Habitacion (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    CodigoCasa INT,
+    TipoHabitacion ENUM('I', 'D', 'T', 'C') DEFAULT 'D',
+    Capacidad INT,
+    Precio DECIMAL(10, 2) CHECK (Precio > 0),
+    Bano ENUM('S', 'N'),
+    CONSTRAINT FK_CasaColonias_Habitacion FOREIGN KEY (CodigoCasa) REFERENCES CasaColonias(Codigo)
+);
+
+-- Crear la tabla Reserva
+CREATE TABLE Reserva (
+    NumeroReserva INT AUTO_INCREMENT PRIMARY KEY,
+    CodigoCasa INT,
+    NIFCliente CHAR(9),
+    FechaReserva DATE,
+    FechaEntrada DATE,
+    FechaSalida DATE CHECK (FechaSalida > FechaEntrada),
+    RegimenAlimenticio ENUM('SA', 'AD', 'MP', 'PC') DEFAULT 'PC',
+    CONSTRAINT FK_CasaColonias_Reserva FOREIGN KEY (CodigoCasa) REFERENCES CasaColonias(Codigo),
+    CONSTRAINT FK_Cliente_Reserva FOREIGN KEY (NIFCliente) REFERENCES Cliente(NIF)
+);
+-- Crear la tabla Actividad
+CREATE TABLE Actividad (
+    Codigo INT PRIMARY KEY,
+    Nombre VARCHAR(255),
+    Descripcion TEXT,
+    NivelDificultad INT CHECK (NivelDificultad BETWEEN 1 AND 5)
+);
+-- Crear la tabla HorarioActividad
+CREATE TABLE HorarioActividad (
+    CodigoActividad INT,
+    DiaSemana VARCHAR(15),
+    CodigoCasa INT,
+    FOREIGN KEY (CodigoActividad) REFERENCES Actividad(Codigo),
+    FOREIGN KEY (CodigoCasa) REFERENCES CasaColonias(Codigo)
+);
+-- Asegurarse de que el horario de actividad solo contenga días válidos (por ejemplo, 'lunes', 'martes', etc.).
+-- Puedes hacer esto mediante una aplicación o código que inserte datos en esta tabla.
+---------------------------------------------
+Para el campo descripción de la tabla Actividad, podría ser apropiado agregar un índice de tipo FULLTEXT. Los índices FULLTEXT son útiles para realizar búsquedas de texto completo en campos que contienen texto largo, como descripciones. Estos índices permiten realizar búsquedas más avanzadas, incluyendo palabras clave y frases.
+
+Para crear un índice FULLTEXT en el campo descripción, puedes hacerlo de la siguiente manera:
+
+sql
+Copy code
+-- Crear un índice FULLTEXT en el campo descripción de la tabla Actividad
+ALTER TABLE Actividad ADD FULLTEXT (descripcion); // codigo pa el mysql oite
+Después de agregar este índice, podrás realizar consultas de búsqueda de texto completo en el campo descripción, lo que te permitirá encontrar actividades que coincidan con palabras clave o frases en las descripciones. Ten en cuenta que los índices FULLTEXT son útiles para búsquedas de texto más complejas pero pueden ocupar más espacio en disco que los índices estándar.
+------------------------------------------------------
+
+El campo NIF de la tabla Clientes generalmente se utiliza como una clave primaria única, y es una buena práctica agregar un índice de clave primaria a ese campo. Este índice asegurará que los valores de NIF sean únicos y permitirá una búsqueda eficiente en función de ese campo.
+
+Puedes crear un índice de clave primaria en el campo NIF de la tabla `Clientes de la siguiente manera:
+
+sql
+Copy code
+-- Agregar un índice de clave primaria al campo NIF de la tabla Clientes
+ALTER TABLE Cliente ADD PRIMARY KEY (NIF);
+Este comando asegura que el campo NIF sea único en la tabla Clientes y que esté indexado de manera eficiente para búsquedas y garantizar la integridad de los datos.

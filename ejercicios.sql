@@ -1,0 +1,13 @@
+show databases;
+use empresaclase;
+show tables;
+select * from departamentos;
+insert into departamentos values (140,20,15000,100,"PUBLICIDAD");
+select * from empleados;
+insert into empleados values (170,140,930,'1967-6-12','2024-02-03',2000,150,3,"Rosa","Del Campo","Florido","2342243ED","ro",null);
+select * from empleados;
+update  departamentos set numce=10 where nomde = "SECTOR INDUSTRIAL";
+start transaction;
+set @maxemp = (select max(numem) from empleados)+1; 
+set @maxde = (select max(numde) from empleados)+1;
+insert into empleados values(@maxemp,140,940,'1972-12-2',curdate(),1400,null,2,"Pedro","González","Sánchez",2342420,"ju",null);
