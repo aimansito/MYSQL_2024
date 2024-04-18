@@ -27,7 +27,7 @@ END $$
 DELIMITER ;
 use empresaclase;
 select nomde from departamentos;
-show  index from departamentos;
+show index from departamentos;
 
 select presude from departamentos;
 drop index presupuestoDepto on departamentos;

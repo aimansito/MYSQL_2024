@@ -28,4 +28,3 @@ values
 (132,20,300000,120,'MESSI');
 
 -- ej2
-select departamentos.nomde, 
