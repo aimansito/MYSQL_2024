@@ -1,4 +1,4 @@
-
+create database dawFoodAiman;
 use dawFoodAiman;
 CREATE TABLE TPV
 (
@@ -50,3 +50,29 @@ CREATE TABLE detalleTicket
   Constraint fk_detalleTicket_ticket FOREIGN KEY (idTicket) REFERENCES Ticket(idTicket),
   Constraint fk_detalleTicket_prod FOREIGN KEY (idProducto) REFERENCES Producto(idProducto)
 );
+
+-- triggers 
+DROP TRIGGER IF EXISTS control_stock
+DELIMITER $$ 
+CREATE TRIGGER control_stock 
+BEFORE INSERT ON detalleTicket 
+FOR EACH ROW 
+BEGIN 
+	DECLARE stock_actual INT; -- creamos una variable en la que se almacenará el stock actual
+ SELECT stock INTO stock_actual 
+ FROM Productos 
+ WHERE idProducto = NEW.idProducto; 
+ IF NEW.cantidadProducto > stock_actual THEN 
+	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay suficiente stock'; 
+ END IF; 
+END;$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER decrementarStock
+AFTER INSERT ON detalleTicket
+FOR EACH ROW 
+BEGIN 
+    UPDATE Productos SET stock = stock - NEW.cantidadProducto WHERE idProducto = NEW.idProducto; 
+END $$;
+DELIMITER ;
