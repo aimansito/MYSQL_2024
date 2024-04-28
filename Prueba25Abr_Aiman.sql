@@ -8,43 +8,57 @@ use GBDgestionaTests;
 DROP PROCEDURE IF EXISTS ej1;
 DELIMITER $$
 CREATE PROCEDURE ej1
-		(IN numero int)
+	(IN numero char(12)) -- Cambié el tipo de dato a char(12) para coincidir con el tipo de `respuestas.numexped`
 BEGIN
-	SELECT respuestas.numexped,count(resvalida), materias.nommateria, tests.codtest, tests.descrip
-    FROM preguntas 
-    JOIN respuestas ON preguntas.codtest = respuestas.codtest
-   	 and preguntas.codtest = respuestas.numexped 
-		and preguntas.codtest = respuestas.numpreg 
-			and preguntas.numpreg = respuestas.codtest 
-				and preguntas.numpreg = respuestas.numexped 
-					and preguntas.numpreg = respuestas.numexped
-    JOIN tests ON preguntas.codtest = tests.codtest and preguntas.numpreg = tests.codtest
-	JOIN materias on tests.codmateria = materias.codmateria
-    WHERE respuestas.numexped = numero and numrepeticion in (select max(numrepeticion) from respuestas)
-    GROUP BY materias.nommateria, tests.codtest, tests.descrip
-    HAVING count(DISTINCT respuestas.numrepeticion) >1;
+	SELECT
+		materias.nommateria AS nombre_materia,
+		tests.codtest AS codigo_test,
+		tests.descrip AS descripcion_test,
+		COUNT(DISTINCT respuestas.numrepeticion) AS numero_respuestas_validas
+	FROM respuestas
+	JOIN preguntas ON respuestas.codtest = preguntas.codtest AND respuestas.numpreg = preguntas.numpreg
+	JOIN tests ON preguntas.codtest = tests.codtest
+	JOIN materias ON tests.codmateria = materias.codmateria
+	WHERE respuestas.numexped = numero
+		AND respuestas.numrepeticion IN (
+			SELECT MAX(numrepeticion)
+			FROM respuestas
+			WHERE numexped = numero
+			GROUP BY codtest
+		)
+	GROUP BY materias.nommateria, tests.codtest, tests.descrip
+	HAVING COUNT(DISTINCT respuestas.numrepeticion) > 1;
 END $$
 DELIMITER ;
+
 
 call ej1(1);
 
 -- ej2
 DROP VIEW IF EXISTS ej2;
-CREATE VIEW ej2
-	(numexped,resvalida,nommateria,codtest,descrip,numexped)
-AS
-	SELECT numexped,respuestas.numexped,count(resvalida), materias.nommateria, tests.codtest, tests.descrip
-    FROM preguntas 
-    JOIN respuestas ON preguntas.codtest = respuestas.codtest
-   	 and preguntas.codtest = respuestas.numexped 
-		and preguntas.codtest = respuestas.numpreg 
-			and preguntas.numpreg = respuestas.codtest 
-				and preguntas.numpreg = respuestas.numexped 
-					and preguntas.numpreg = respuestas.numexped
-    JOIN tests ON preguntas.codtest = tests.codtest and preguntas.numpreg = tests.codtest
-	JOIN materias on tests.codmateria = materias.codmateria
-    WHERE numrepeticion in (select max(numrepeticion) from respuestas)
-    GROUP BY materias.nommateria, tests.codtest, tests.descrip
-    HAVING count(DISTINCT respuestas.numrepeticion) >1;
-    ;
+
+CREATE VIEW ej2 AS
+SELECT
+    respuestas.numexped AS numero_expediente,
+    materias.nommateria AS nombre_materia,
+    tests.codtest AS codigo_test,
+    tests.descrip AS descripcion_test,
+    COUNT(DISTINCT respuestas.numrepeticion) AS numero_respuestas_validas
+FROM respuestas
+JOIN preguntas ON respuestas.codtest = preguntas.codtest AND respuestas.numpreg = preguntas.numpreg
+JOIN tests ON preguntas.codtest = tests.codtest
+JOIN materias ON tests.codmateria = materias.codmateria
+WHERE respuestas.numexped IN (
+    SELECT DISTINCT numexped
+    FROM respuestas
+    GROUP BY numexped, codtest
+    HAVING COUNT(DISTINCT numrepeticion) > 1
+)
+AND respuestas.numrepeticion = (
+    SELECT MAX(numrepeticion)
+    FROM respuestas
+    WHERE respuestas.numexped = respuestas.numexped
+    GROUP BY codtest
+)
+GROUP BY respuestas.numexped, materias.nommateria, tests.codtest, tests.descrip;
 SELECT * FROM ej2;
