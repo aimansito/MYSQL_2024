@@ -1,8 +1,9 @@
+drop database dawFoodAiman;
 create database dawFoodAiman;
 use dawFoodAiman;
 CREATE TABLE TPV
 (
-  idTPV INT NOT NULL,
+  idTPV INT auto_increment  NOT NULL,
   ubicacion varchar(100) NOT NULL,
   fechaHora datetime NOT NULL,
   listaTicketVentas varchar(100) NOT NULL,
@@ -11,7 +12,7 @@ CREATE TABLE TPV
 
 CREATE TABLE Ticket
 (
-  idTicket INT NOT NULL,
+  idTicket INT auto_increment NOT NULL,
   numPedido INT NOT NULL,
   listaProducto varchar(100) NOT NULL,
   importeTotal decimal(6,2) NOT NULL,
@@ -24,14 +25,14 @@ CREATE TABLE Ticket
 CREATE TABLE tipoProducto
 (
   tipoCat INT NOT NULL,
-  codTipoProducto INT NOT NULL,
+  codTipoProducto INT auto_increment NOT NULL,
   subCategorias INT NOT NULL,
   constraint pk_tipoprod PRIMARY KEY (codTipoProducto)
 );
 
 CREATE TABLE Producto
 (
-  idProducto INT NOT NULL,
+  idProducto INT auto_increment NOT NULL,
   IVA enum('21','10') NOT NULL,
   precio decimal(6,2) NOT NULL,
   stock INT NOT NULL,
@@ -44,7 +45,7 @@ CREATE TABLE Producto
 CREATE TABLE detalleTicket
 (
   cantidadProducto INT NOT NULL,
-  idTicket INT NOT NULL,
+  idTicket INT  NOT NULL,
   idProducto INT NOT NULL,
   Constraint pk_detalleTicket PRIMARY KEY (cantidadProducto),
   Constraint fk_detalleTicket_ticket FOREIGN KEY (idTicket) REFERENCES Ticket(idTicket),
@@ -52,27 +53,33 @@ CREATE TABLE detalleTicket
 );
 
 -- triggers 
-DROP TRIGGER IF EXISTS control_stock
+DROP TRIGGER IF EXISTS control_stock;
 DELIMITER $$ 
 CREATE TRIGGER control_stock 
 BEFORE INSERT ON detalleTicket 
 FOR EACH ROW 
 BEGIN 
 	DECLARE stock_actual INT; -- creamos una variable en la que se almacenará el stock actual
- SELECT stock INTO stock_actual 
- FROM Productos 
- WHERE idProducto = NEW.idProducto; 
- IF NEW.cantidadProducto > stock_actual THEN 
-	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay suficiente stock'; 
- END IF; 
+	 SELECT stock INTO stock_actual 
+	 FROM Producto
+	 WHERE idProducto = NEW.idProducto; 
+	 IF NEW.cantidadProducto > stock_actual THEN 
+		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay suficiente stock'; 
+	 END IF; 
 END;$$
 DELIMITER ;
 
-DELIMITER $$
-CREATE TRIGGER decrementarStock
+DELIMITER $$ 
+CREATE TRIGGER decrementoStock 
 AFTER INSERT ON detalleTicket
 FOR EACH ROW 
-BEGIN 
-    UPDATE Productos SET stock = stock - NEW.cantidadProducto WHERE idProducto = NEW.idProducto; 
-END $$;
+	BEGIN DECLARE stock_actual INT; -- creamos una variable en la que se almacenará el stock actual 
+    SELECT stock INTO stock_actual 
+    FROM Producto 
+    WHERE codProducto = NEW.Producto.codProducto; 
+	IF NEW.cantidadProducto > stock_actual THEN 
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay suficiente stock'; 
+            ELSE UPDATE Producto SET stock = stock - NEW.cantidadProducto WHERE Producto.codProducto = NEW.Producto.codProducto; 
+	END IF; 
+END;$$ 
 DELIMITER ;
