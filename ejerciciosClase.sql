@@ -23,6 +23,11 @@ SELECT feciniestancia, fecanulacion,
        DATEDIFF(feciniestancia, fecanulacion) DIV 30 AS numMeses,
        COUNT(codreserva) AS total_anulaciones
 FROM reservas
-WHERE fecanulacion is not null
+WHERE fecanulacion is not null 
 GROUP BY feciniestancia, fecanulacion, numMeses
 HAVING numMeses BETWEEN 0 AND 2;
+-- ej 2
+SELECT codreserva,DATEDIFF(feciniestancia, fecanulacion) DIV 30 AS numMeses
+FROM reservas
+WHERE fecanulacion IS NOT NULL
+    AND DATEDIFF(feciniestancia, fecanulacion) DIV 30 = @numMeses;
