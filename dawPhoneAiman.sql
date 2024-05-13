@@ -106,14 +106,20 @@ WHERE codEntidad=1;
 -- y el segundo para que una vez recibidos los ficheros de los bancos poner como pendientes de cobro 
 -- los recibos de los clientes a los que no se le haya podido cobrar dicho fichero.
 
+
+-- insert en recibos 
+-- se genera una tabla temporal para cada entidad
+-- guardar en la tabla temporal corresponiente a cobrar a cad acliente 
+-- generar el fichero 
+
+-- buscar plan activo antes de esa fecha en la que se ejecuta
 DROP PROCEDURE IF EXISTS GenerarRecibosMensuales;
 DELIMITER $$
 CREATE PROCEDURE GenerarRecibosMensuales()
 BEGIN
     DECLARE fecha_recibo DATETIME;
-    DECLARE dias_mes_actual INT;
     DECLARE cliente_id INT;
-    DECLARE pagado INT DEFAULT FALSE;
+    DECLARE pagado boolean DEFAULT FALSE;
     DECLARE maxRecibo INT;
 
     DECLARE cliente_cursor CURSOR FOR
@@ -126,7 +132,7 @@ BEGIN
         FETCH cliente_cursor INTO cliente_id;
         IF NOT pagado THEN
             -- Obtén la fecha actual
-            SET fecha_recibo = CONCAT(CURRENT_DATE(), '05:00:00'); -- Establece la hora a las 02:00 am
+            SET fecha_recibo = CONCAT(CURRENT_DATE(),':', '15:00:00'); 
             SELECT IFNULL(MAX(codRecibo), 0) + 1 INTO maxRecibo FROM Recibos;
             -- Inserta un nuevo registro de recibo para el cliente actual
             INSERT INTO Recibos (codRecibo, fecRecibo, importeFinal, pagado, codCliente) 
@@ -143,8 +149,8 @@ CREATE EVENT IF NOT EXISTS EventoRecibos
 ON SCHEDULE 
 	EVERY 1 MONTH
     STARTS CASE
-			WHEN DAY(CURRENT_DATE()) > 5 THEN CONCAT(YEAR(CURRENT_DATE()), '-', MONTH(CURRENT_DATE()) + 1, '-05 02:00:00') 
-                ELSE CONCAT(YEAR(CURRENT_DATE()), '-', MONTH(CURRENT_DATE()), '-05 02:00:00')
+			WHEN DAY(CURRENT_DATE()) > 5 THEN CONCAT(YEAR(CURRENT_DATE()), '-', MONTH(CURRENT_DATE()) + 1,':', '-05 15:00:00') 
+                ELSE CONCAT(YEAR(CURRENT_DATE()), '-', MONTH(CURRENT_DATE()), ':','-05 02:00:00')
                 
 			END
 	ON COMPLETION PRESERVE
