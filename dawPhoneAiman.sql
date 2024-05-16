@@ -32,22 +32,23 @@ CREATE TABLE IF NOT EXISTS Clientes
         Constraint pk_clientes PRIMARY KEY(codCli),
         Constraint fk_clientes_entidad FOREIGN KEY(codEntidad) references Entidades(codEntidad)
         );
-        
+DROP TABLE Recibos;
 CREATE TABLE IF NOT EXISTS Recibos 
 		(
         codRecibo int not null,
         fecRecibo datetime not null,
         importeFinal double not null,
-        pagado boolean not null,
+        pagado boolean ,
         codCliente int not null,
         constraint pk_recibos PRIMARY KEY (codRecibo),
         constraint fk_recibos_clientes FOREIGN KEY (codCliente) references Clientes(codCli)
         );
+DROP TABLE detallePlan;
 CREATE TABLE IF NOT EXISTS detallePlan
 		(
         codCli int not null,
         codPlan int not null,
-		estadoPlan ENUM('Pagado','Impagado'),
+		estadoPlan ENUM('Pagado','Impagado','Pendiente'),
         fecAltaPlan date not null,
         fecBajaPlan date not null,
 		PRIMARY KEY (codCli, codPlan),
@@ -117,33 +118,56 @@ DROP PROCEDURE IF EXISTS GenerarRecibosMensuales;
 DELIMITER $$
 CREATE PROCEDURE GenerarRecibosMensuales()
 BEGIN
+	DECLARE finCursor boolean default false;
+	
     DECLARE fecha_recibo DATETIME;
     DECLARE cliente_id INT;
-    DECLARE pagado boolean DEFAULT FALSE;
+    DECLARE pagado BOOLEAN DEFAULT FALSE;
     DECLARE maxRecibo INT;
+    DECLARE cliente_plan INT; 
+    DECLARE importeFinal double;
+    DECLARE fechaAlta date;
+    DECLARE numDias int;
 
     DECLARE cliente_cursor CURSOR FOR
-        SELECT codCli
-        FROM Clientes;
+        SELECT Clientes.codCli,importe,fecAltaPlan
+        FROM Clientes
+        JOIN detallePlan on Clientes.codCli = detallePlan.codPlan AND Clientes.codCli = Clientes.codCli
+        JOIN PlanProducto on detallePlan.codCli = PlanProducto.codPlan and detallePlan.codPlan=PlanProducto.codPlan;
     
-    -- Abre el cursor para obtener todos los clientes
+    DECLARE CONTINUE HANDLER FOR sqlstate '02000' set finCursor = true;
     OPEN cliente_cursor;
     REPEAT
-        FETCH cliente_cursor INTO cliente_id;
+        FETCH cliente_cursor INTO cliente_id,importeFinal,fechaAlta;
         IF NOT pagado THEN
-            -- Obtén la fecha actual
-            SET fecha_recibo = CONCAT(CURRENT_DATE(),':', '15:00:00'); 
+            SET fechaAlta = CONCAT(CURRENT_DATE(),':' ,'5:00:00'); 
             SELECT IFNULL(MAX(codRecibo), 0) + 1 INTO maxRecibo FROM Recibos;
-            -- Inserta un nuevo registro de recibo para el cliente actual
-            INSERT INTO Recibos (codRecibo, fecRecibo, importeFinal, pagado, codCliente) 
-            VALUES (maxRecibo, fecha_recibo, 0, 0, cliente_id); -- 0 es el importe inicial, se actualizará después
+            
+			-- busco el plan activo
+            SELECT detallePlan.codPlan INTO cliente_plan 
+            FROM detallePlan 
+            JOIN PlanProducto ON detallePlan.codCli = PlanProducto.codPlan and detallePlan.codPlan = PlanProducto.codPlan
+            WHERE detallePlan.codCli = cliente_id AND estadoPlan = 'Pagado' 
+            AND fecAltaPlan <= CURRENT_DATE() AND fecBajaPlan >= CURRENT_DATE() AND importe = importeFinal;
+            
+            SET numDias =  datediff(curdate(),detallePlan.fecAltaPlan);
+            IF(numDias<=35) then
+				SET importeFinal = (PlanProducto.importe/30)*(numDias-5);
+                ELSE
+					SET importeFinal = importe;
+            END IF;
+            -- Inserto un nuevo registro de recibo para el cliente actual junto con su plan activo
+            INSERT INTO Recibos (codRecibo, fecRecibo, importeFinal, pagado, codCliente, codPlan) 
+            VALUES (maxRecibo, fechaAlta, importeFinal, cliente_id); 
+            
+            
         END IF;
         SET pagado = NOT pagado;
-    UNTIL pagado END REPEAT;
+    UNTIL finCursor = true END REPEAT;
     CLOSE cliente_cursor;
 END$$
 DELIMITER ;
-
+call GenerarRecibosMensuales();
 DELIMITER $$
 CREATE EVENT IF NOT EXISTS EventoRecibos
 ON SCHEDULE 
