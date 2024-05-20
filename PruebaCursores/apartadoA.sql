@@ -27,7 +27,7 @@ BEGIN
 
     REPEAT
         IF NOT finCursor THEN
-            SET fecha_recibo = CONCAT(CURRENT_DATE(), ' ', '5:00:00');
+            SET fecha_recibo = CURRENT_DATE();
             SELECT IFNULL(MAX(codRecibo), 0) + 1 INTO maxRecibo FROM Recibos;
 
             SET numDias = DATEDIFF(CURRENT_DATE(), fechaAlta);
@@ -46,5 +46,4 @@ BEGIN
     CLOSE cliente_cursor;
 END$$
 DELIMITER ;
-select * from tmp_Vodafone;
 call GenerarRecibosMensuales();

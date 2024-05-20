@@ -1,56 +1,55 @@
-DROP PROCEDURE IF EXISTS insertarDatos;
+DELIMITER ;
+call crearTablasTemporales();
 DELIMITER $$
-CREATE PROCEDURE insertarDatos()
+CREATE PROCEDURE insertarDatosTablasTemporales()
 BEGIN
     DECLARE var BOOLEAN DEFAULT 0;
     DECLARE codEntidades INT;
     DECLARE nomEntidades VARCHAR(40);
     DECLARE nomTabla VARCHAR(100);
-    
+
     DECLARE cur_entidades CURSOR FOR
         SELECT codEntidad, nomEntidad FROM Entidades;
-    
+
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET var = 1;
 
-    -- Crear tabla temporal para almacenar los nombres de las entidades
-    CREATE TEMPORARY TABLE IF NOT EXISTS nombreEntidades (
-        entidadNom VARCHAR(40)
-    );
-
     OPEN cur_entidades;
-    
+
     FETCH cur_entidades INTO codEntidades, nomEntidades;
-    
+
     WHILE var = 0 DO
         BEGIN
             -- Eliminar espacios en blanco iniciales en el nombre de la entidad
             SET nomEntidades = LTRIM(nomEntidades);
-            SET nomTabla = CONCAT('tmp_', nomEntidades);
-            
+            SET nomTabla = CONCAT('tmp_', REPLACE(nomEntidades, ' ', '_')); -- Reemplazar espacios en el nombre de la tabla
+
             -- Verificar si el nombre de la entidad no es NULL ni vacío
             IF nomTabla IS NOT NULL AND nomTabla <> '' THEN
-                
-                -- Insertar el nombre de la tabla en nombreEntidades
-                INSERT INTO nombreEntidades (entidadNom) VALUES (nomTabla);
-                
                 -- Insertar datos en la tabla temporal específica, evitando duplicados
                 SET @sql = CONCAT('INSERT IGNORE INTO `', nomTabla, '` 
-                    SELECT c.codCli, CONCAT(c.nombre, " ", c.ape1cli, " ", IFNULL(c.ape2cli, "")), c.ape1cli, c.ape2cli, c.dni, c.cuentaBancaria, r.importeFinal
+                    SELECT c.codCli, c.nombre, c.ape1cli, c.ape2cli, c.dni, c.cuentaBancaria, r.importeFinal
                     FROM Clientes c
                     JOIN Recibos r ON c.codCli = r.codCliente
                     WHERE c.codEntidad = ', codEntidades, ';');
                 PREPARE stmt FROM @sql;
                 EXECUTE stmt;
                 DEALLOCATE PREPARE stmt;
+            ELSE
+                -- Manejo de error si el nombre de la entidad es inválido
+                -- (puede registrar el error o simplemente continuar)
+                SET @sql = 'SELECT "Nombre de entidad inválido" AS Error';
+                PREPARE stmt FROM @sql;
+                EXECUTE stmt;
+                DEALLOCATE PREPARE stmt;
             END IF;
-            
+
             FETCH cur_entidades INTO codEntidades, nomEntidades;
         END;
     END WHILE;
-    
+
     CLOSE cur_entidades;
 END$$
 DELIMITER ;
-call insertarDatos();
-select * from nombreEntidades;
-delete from nombreEntidades;
+call insertarDatosTablasTemporales();
+select * from tmp_Caixa;
+delete  from tmp_Caixa;
