@@ -1,4 +1,5 @@
 -- Creacion BADAT Proyecto 
+drop database dawPhoneAiman;
 create database if not exists dawPhoneAiman;
 use dawPhoneAiman;
 CREATE TABLE IF NOT EXISTS Entidades
@@ -92,7 +93,6 @@ INSERT INTO detallePlan (codCli, codPlan, estadoPlan, fecAltaPlan, fecBajaPlan) 
 
 
 -- index 
-DROP INDEX indexEntidad ON Clientes;
 CREATE INDEX indexEntidad ON Clientes(codCli,codEntidad);
 SHOW INDEX FROM Clientes; 
 
@@ -423,8 +423,8 @@ BEGIN
     CLOSE cur_entidades;
 END $$
 DELIMITER ;
+SELECT * FROM nombreEntidades;
 
-
-SELECT *  FROM nombreEntidades;
+SELECT *  FROM t;
 SELECT * FROM tmp_Caixa;
 call GenerarFicheros();

@@ -33,6 +33,8 @@ BEGIN
             SET numDias = DATEDIFF(CURRENT_DATE(), fechaAlta);
             IF numDias <= 35 THEN
                 SET importe = (importe / 30) * (numDias - 5);
+                else
+					set importe = importe;
             END IF;
 
             INSERT INTO Recibos (codRecibo, fecRecibo, importeFinal, pagado, codCliente)
@@ -44,5 +46,5 @@ BEGIN
     CLOSE cliente_cursor;
 END$$
 DELIMITER ;
-
+select * from tmp_Vodafone;
 call GenerarRecibosMensuales();

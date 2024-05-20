@@ -1,6 +1,6 @@
-DROP PROCEDURE IF EXISTS generarTablasTemporales;
+DROP PROCEDURE IF EXISTS insertarDatos;
 DELIMITER $$
-CREATE PROCEDURE generarTablasTemporales()
+CREATE PROCEDURE insertarDatos()
 BEGIN
     DECLARE var BOOLEAN DEFAULT 0;
     DECLARE codEntidades INT;
@@ -29,21 +29,19 @@ BEGIN
             
             -- Verificar si el nombre de la entidad no es NULL ni vacío
             IF nomTabla IS NOT NULL AND nomTabla <> '' THEN
-                -- Crear la tabla temporal específica para la entidad con un índice único en idCliente
-                SET @sql = CONCAT('CREATE TEMPORARY TABLE IF NOT EXISTS `', nomTabla, '` (
-                    idCliente INT,
-                    nombreCli VARCHAR(40),
-                    ape1cli VARCHAR(100) NOT NULL,
-                    ape2cli VARCHAR(100),
-                    dniCli VARCHAR(9),
-                    numCuentaCli VARCHAR(100),
-                    importeRecibo DOUBLE,
-                    PRIMARY KEY (idCliente)
-                );');
+                
+                -- Insertar el nombre de la tabla en nombreEntidades
+                INSERT INTO nombreEntidades (entidadNom) VALUES (nomTabla);
+                
+                -- Insertar datos en la tabla temporal específica, evitando duplicados
+                SET @sql = CONCAT('INSERT IGNORE INTO `', nomTabla, '` 
+                    SELECT c.codCli, CONCAT(c.nombre, " ", c.ape1cli, " ", IFNULL(c.ape2cli, "")), c.ape1cli, c.ape2cli, c.dni, c.cuentaBancaria, r.importeFinal
+                    FROM Clientes c
+                    JOIN Recibos r ON c.codCli = r.codCliente
+                    WHERE c.codEntidad = ', codEntidades, ';');
                 PREPARE stmt FROM @sql;
                 EXECUTE stmt;
                 DEALLOCATE PREPARE stmt;
-                
             END IF;
             
             FETCH cur_entidades INTO codEntidades, nomEntidades;
@@ -52,12 +50,7 @@ BEGIN
     
     CLOSE cur_entidades;
 END$$
-
 DELIMITER ;
-
-
-
-CALL generarTablasTemporales();
-SELECT * FROM nombreEntidades;
-DELETE FROM nombreEntidades;
-SELECT * FROM tmp_Caixa;
+call insertarDatos();
+select * from nombreEntidades;
+delete from nombreEntidades;

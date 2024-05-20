@@ -1,0 +1,15 @@
+Volumen	La cantidad de datos importa. Con big data, tendrá que procesar grandes volúmenes de datos no estructurados de baja densidad. Puede tratarse de datos de valor desconocido, como feeds de datos de Twitter, flujos de clics de una página web o aplicación para móviles, o equipo con sensores. Para algunas organizaciones, esto puede suponer decenas de terabytes de datos. Para otras, incluso cientos de petabytes.
+Velocidad	La velocidad es el ritmo al que se reciben los datos y (posiblemente) al que se aplica alguna acción. La mayor velocidad de los datos normalmente se transmite directamente a la memoria, en vez de escribirse en un disco. Algunos productos inteligentes habilitados para Internet funcionan en tiempo real o prácticamente en tiempo real y requieren una evaluación y actuación en tiempo real.
+Variedad	La variedad hace referencia a los diversos tipos de datos disponibles. Los datos convencionales eran estructurados y podían organizarse claramente en una base de datos relacional. Con el auge del big data, los datos se presentan en nuevos tipos de datos no estructurados. Los tipos de datos no estructurados y semiestructurados, como el texto, audio o video, requieren un preprocesamiento adicional para poder obtener significado y habilitar los metadatos.
+
+
+volumen : Es la cantidad de datos que matinene y almacena una empresa en su sistema informático 
+velocidad : El tiempo en el que se reciben,almacenan, escriben o actualizan los datos , ese tiempo debe ser lo más rápido y eficaz posible
+variedad : 
+
+
+--- teoria
+bd distribuidas 
+tipos de distribucis vs replicacion si es mixta horizontal vertical 
+caract bd objeto relacionales 
+bd no sql y big data 
