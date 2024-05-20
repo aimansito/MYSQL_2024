@@ -1,5 +1,4 @@
 -- Creacion BADAT Proyecto 
-drop database if exists dawPhoneAiman;
 create database if not exists dawPhoneAiman;
 use dawPhoneAiman;
 CREATE TABLE IF NOT EXISTS Entidades
@@ -32,7 +31,6 @@ CREATE TABLE IF NOT EXISTS Clientes
         Constraint pk_clientes PRIMARY KEY(codCli),
         Constraint fk_clientes_entidad FOREIGN KEY(codEntidad) references Entidades(codEntidad)
         );
-DROP TABLE Recibos;
 CREATE TABLE IF NOT EXISTS Recibos 
 		(
         codRecibo int not null,
@@ -43,7 +41,6 @@ CREATE TABLE IF NOT EXISTS Recibos
         constraint pk_recibos PRIMARY KEY (codRecibo),
         constraint fk_recibos_clientes FOREIGN KEY (codCliente) references Clientes(codCli)
         );
-DROP TABLE detallePlan;
 CREATE TABLE IF NOT EXISTS detallePlan
 		(
         codCli int not null,
@@ -118,55 +115,49 @@ DROP PROCEDURE IF EXISTS GenerarRecibosMensuales;
 DELIMITER $$
 CREATE PROCEDURE GenerarRecibosMensuales()
 BEGIN
-	DECLARE finCursor boolean default false;
-	
-    DECLARE fecha_recibo DATETIME;
+    DECLARE finCursor BOOLEAN DEFAULT FALSE;
     DECLARE cliente_id INT;
-    DECLARE pagado BOOLEAN DEFAULT FALSE;
+    DECLARE importe DOUBLE;
+    DECLARE fechaAlta DATE;
     DECLARE maxRecibo INT;
-    DECLARE cliente_plan INT; 
-    DECLARE importeFinal double;
-    DECLARE fechaAlta date;
-    DECLARE numDias int;
+    DECLARE fecha_recibo DATETIME;
+    DECLARE numDias INT;
 
     DECLARE cliente_cursor CURSOR FOR
-        SELECT Clientes.codCli,importe,fecAltaPlan
-        FROM Clientes
-        JOIN detallePlan on Clientes.codCli = detallePlan.codPlan AND Clientes.codCli = Clientes.codCli
-        JOIN PlanProducto on detallePlan.codCli = PlanProducto.codPlan and detallePlan.codPlan=PlanProducto.codPlan;
-    
-    DECLARE CONTINUE HANDLER FOR sqlstate '02000' set finCursor = true;
+        SELECT Clientes.codCli, PlanProducto.importe, detallePlan.fecAltaPlan
+        FROM Clientes 
+        JOIN detallePlan ON Clientes.codCli = detallePlan.codCli
+        JOIN PlanProducto ON detallePlan.codPlan = PlanProducto.codPlan
+        WHERE detallePlan.estadoPlan = 'Pagado' 
+          AND detallePlan.fecAltaPlan <= CURRENT_DATE()
+          AND (detallePlan.fecBajaPlan IS NULL OR detallePlan.fecBajaPlan >= CURRENT_DATE());
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finCursor = TRUE;
+
     OPEN cliente_cursor;
+    FETCH cliente_cursor INTO cliente_id, importe, fechaAlta;
+
     REPEAT
-        FETCH cliente_cursor INTO cliente_id,importeFinal,fechaAlta;
-        IF NOT pagado THEN
-            SET fechaAlta = CONCAT(CURRENT_DATE(),':' ,'5:00:00'); 
+        IF NOT finCursor THEN
+            SET fecha_recibo = CONCAT(CURRENT_DATE(), ' ', '5:00:00');
             SELECT IFNULL(MAX(codRecibo), 0) + 1 INTO maxRecibo FROM Recibos;
-            
-			-- busco el plan activo
-            SELECT detallePlan.codPlan INTO cliente_plan 
-            FROM detallePlan 
-            JOIN PlanProducto ON detallePlan.codCli = PlanProducto.codPlan and detallePlan.codPlan = PlanProducto.codPlan
-            WHERE detallePlan.codCli = cliente_id AND estadoPlan = 'Pagado' 
-            AND fecAltaPlan <= CURRENT_DATE() AND fecBajaPlan >= CURRENT_DATE() AND importe = importeFinal;
-            
-            SET numDias =  datediff(curdate(),detallePlan.fecAltaPlan);
-            IF(numDias<=35) then
-				SET importeFinal = (PlanProducto.importe/30)*(numDias-5);
-                ELSE
-					SET importeFinal = importe;
+
+            SET numDias = DATEDIFF(CURRENT_DATE(), fechaAlta);
+            IF numDias <= 35 THEN
+                SET importe = (importe / 30) * (numDias - 5);
             END IF;
-            -- Inserto un nuevo registro de recibo para el cliente actual junto con su plan activo
-            INSERT INTO Recibos (codRecibo, fecRecibo, importeFinal, pagado, codCliente, codPlan) 
-            VALUES (maxRecibo, fechaAlta, importeFinal, cliente_id); 
-            
-            
+
+            INSERT INTO Recibos (codRecibo, fecRecibo, importeFinal, pagado, codCliente)
+            VALUES (maxRecibo, fecha_recibo, importe, FALSE, cliente_id);
+
+            FETCH cliente_cursor INTO cliente_id, importe, fechaAlta;
         END IF;
-        SET pagado = NOT pagado;
-    UNTIL finCursor = true END REPEAT;
+    UNTIL finCursor END REPEAT;
+
     CLOSE cliente_cursor;
 END$$
 DELIMITER ;
+
 call GenerarRecibosMensuales();
 DELIMITER $$
 CREATE EVENT IF NOT EXISTS EventoRecibos
@@ -180,7 +171,6 @@ ON SCHEDULE
 	ON COMPLETION PRESERVE
 DO CALL GenerarRecibosMensuales();
 SHOW EVENTS;
-call GenerarRecibosMensuales();
 
 DROP PROCEDURE IF EXISTS GenerarFicherosBancarios;
 DELIMITER $$
@@ -188,7 +178,7 @@ CREATE PROCEDURE GenerarFicherosBancarios()
 BEGIN
     DECLARE entidad INT;
     DECLARE nombEntidad VARCHAR(20);
-    DECLARE hecho boolean DEFAULT FALSE;
+    DECLARE var boolean DEFAULT FALSE;
     DECLARE codCliente INT;
     DECLARE importeFinal DOUBLE;
     DECLARE fechaRecibo DATE;
@@ -213,7 +203,7 @@ BEGIN
     WHERE C.codEntidad = 1 ; -- Cambiar por el código de entidad bancaria de BancoA
 
     SET entidad = 2; -- Cambiar por el código de entidad bancaria de BancoA
-    WHILE NOT hecho DO
+    WHILE NOT var DO
         SELECT codCliente, importeFinal, fechaRecibo
         INTO codCliente, importeFinal, fechaRecibo
         FROM Recibos R
@@ -225,7 +215,7 @@ BEGIN
             INSERT INTO BancoB (codCli, importeFinal, fechaRecibo)
             VALUES (codCliente, importeFinal, fechaRecibo);
         ELSE
-            SET hecho = TRUE;
+            SET var = TRUE;
         END IF;
     END WHILE;
 
@@ -262,32 +252,37 @@ DELIMITER $$
 CREATE PROCEDURE ActualizarEstadoRecibos()
 BEGIN
     -- Variables para almacenar datos del archivo de pagos
-    DECLARE hecho boolean DEFAULT FALSE;
+    DECLARE finCursor BOOLEAN DEFAULT FALSE;
     DECLARE cliente_id INT;
     DECLARE plan_id INT;
     DECLARE estado_recibo ENUM('Pagado', 'Impagado');
     
     -- Declarar cursor para recorrer los datos del archivo de pagos del banco
     DECLARE pagos_cursor CURSOR FOR
-        SELECT codCliente, codPlan, estadoRecibo
+        SELECT codCli, codPlan, estadoPlan
         FROM detallePlan; 
-    
+
+    -- Declarar manejador para el fin del cursor
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finCursor = TRUE;
+
     -- Abrir el cursor
     OPEN pagos_cursor;
     
-    
     -- Iniciar bucle para recorrer los datos del archivo de pagos
     REPEAT
-        FETCH pagos_cursor INTO cliente_id, plan_id ,estado_recibo;
-		
-        UPDATE detallePlan
-        SET estadoRecibo = estado_recibo
-        WHERE detallePlan.codCliente = cliente_id and codPlan=plan_id;
-		UNTIL hecho END REPEAT;
-    
+        FETCH pagos_cursor INTO cliente_id, plan_id, estado_recibo;
+        
+        IF NOT finCursor THEN
+            UPDATE detallePlan
+            SET estadoPlan = estado_recibo
+            WHERE detallePlan.codCli = cliente_id AND codPlan = plan_id;
+        END IF;
+    UNTIL finCursor END REPEAT;
+
     CLOSE pagos_cursor;
 END$$
 DELIMITER ;
+
 call ActualizarEstadoRecibos();
 CREATE EVENT IF NOT EXISTS EventoActualizar
 ON SCHEDULE 
@@ -299,3 +294,137 @@ ON SCHEDULE
 			END
 	ON COMPLETION PRESERVE
 DO CALL GenerarRecibosMensuales();
+DROP PROCEDURE IF EXISTS generarTablasTemporales;
+DELIMITER $$
+CREATE PROCEDURE generarTablasTemporales()
+BEGIN
+    DECLARE var BOOLEAN DEFAULT 0;
+    DECLARE codEntidades INT;
+    DECLARE nomEntidades VARCHAR(40);
+    DECLARE nomTabla VARCHAR(100);
+    DECLARE codigo INT DEFAULT 0;
+
+    DECLARE cur_entidades CURSOR FOR
+        SELECT codEntidad, nomEntidad FROM Entidades;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET var = 1;
+
+    -- Crear tabla temporal para almacenar los nombres de las entidades
+    CREATE TEMPORARY TABLE IF NOT EXISTS nombreEntidades (
+        codTabla INT,
+        entidadNom VARCHAR(40),
+        PRIMARY KEY (codTabla)
+    );
+
+    OPEN cur_entidades;
+
+    FETCH cur_entidades INTO codEntidades, nomEntidades;
+
+    WHILE var = 0 DO
+        BEGIN
+            -- Incrementar el código de tabla para cada entidad
+            SET codigo = codigo + 1;
+
+            -- Eliminar espacios en blanco iniciales en el nombre de la entidad
+            SET nomEntidades = LTRIM(nomEntidades);
+            SET nomTabla = CONCAT('tmp_', REPLACE(nomEntidades, ' ', '_')); -- Reemplazar espacios en el nombre de la tabla
+
+            -- Verificar si el nombre de la entidad no es NULL ni vacío
+            IF nomTabla IS NOT NULL AND nomTabla <> '' THEN
+                -- Crear la tabla temporal específica para la entidad con un índice único en idCliente
+                SET @sql = CONCAT('CREATE TEMPORARY TABLE IF NOT EXISTS `', nomTabla, '` (
+                    idCliente INT,
+                    nombreCli VARCHAR(40),
+                    ape1cli VARCHAR(100) NOT NULL,
+                    ape2cli VARCHAR(100),
+                    dniCli VARCHAR(9),
+                    numCuentaCli VARCHAR(100),
+                    importeRecibo DOUBLE,
+                    PRIMARY KEY (idCliente)
+                );');
+                PREPARE stmt FROM @sql;
+                EXECUTE stmt;
+                DEALLOCATE PREPARE stmt;
+
+                -- Insertar el nombre de la tabla en nombreEntidades
+                INSERT INTO nombreEntidades (codTabla, entidadNom) VALUES (codigo, nomTabla);
+
+                -- Insertar datos en la tabla temporal específica, evitando duplicados
+                SET @sql = CONCAT('INSERT IGNORE INTO `', nomTabla, '` 
+                    SELECT c.codCli, c.nombre, c.ape1cli, c.ape2cli, c.dni, c.cuentaBancaria, r.importeFinal
+                    FROM Clientes c
+                    JOIN Recibos r ON c.codCli = r.codCliente
+                    WHERE c.codEntidad = ', codEntidades, ';');
+                PREPARE stmt FROM @sql;
+                EXECUTE stmt;
+                DEALLOCATE PREPARE stmt;
+            ELSE
+                -- Insertar un mensaje de error si el nombre de la entidad es inválido
+                INSERT INTO nombreEntidades (codTabla, entidadNom) VALUES (codigo, 'Nombre de entidad inválido');
+            END IF;
+
+            FETCH cur_entidades INTO codEntidades, nomEntidades;
+        END;
+    END WHILE;
+
+    CLOSE cur_entidades;
+
+    -- Seleccionar registros para verificación
+    SELECT * FROM nombreEntidades;
+END$$
+DELIMITER ;
+
+
+
+-- Llamar al procedimiento para generar las tablas temporales
+CALL generarTablasTemporales();
+DELETE FROM nombreEntidades;
+SELECT * FROM tmp_Caixa;
+
+-- procedimiento de generar los ficheros
+DROP PROCEDURE IF EXISTS GenerarFicheros;
+DELIMITER $$
+CREATE PROCEDURE GenerarFicheros()
+BEGIN
+    DECLARE var BOOLEAN DEFAULT 0;
+    DECLARE entidadNom VARCHAR(40);
+    DECLARE nomBanco VARCHAR(200);
+    
+    DECLARE cur_entidades CURSOR FOR
+        SELECT entidadNom FROM nombreEntidades;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET var = 1;
+
+    OPEN cur_entidades;
+    
+    FETCH cur_entidades INTO entidadNom;
+    
+    WHILE var = 0 DO
+        BEGIN
+            -- Asegurarse de que el nombre de la entidad no sea NULL ni esté vacío
+            IF entidadNom IS NOT NULL AND entidadNom <> '' THEN
+                -- Concatenar el nombre del archivo de salida
+                SET nomBanco = CONCAT('/var/lib/mysql-files/', entidadNom, '.txt');
+                
+                -- Construir la consulta SQL dinámica para exportar los datos
+                SET @sql = CONCAT('SELECT * FROM `', entidadNom, '` INTO OUTFILE \'', nomBanco, '\' FIELDS TERMINATED BY \',\' LINES TERMINATED BY \'\n\'');
+
+                -- Preparar y ejecutar la consulta
+                PREPARE stmt FROM @sql;
+                EXECUTE stmt;
+                DEALLOCATE PREPARE stmt;
+          
+            END IF;
+            
+            FETCH cur_entidades INTO entidadNom;
+        END;
+    END WHILE;
+    
+    CLOSE cur_entidades;
+END $$
+DELIMITER ;
+
+
+SELECT *  FROM nombreEntidades;
+SELECT * FROM tmp_Caixa;
+call GenerarFicheros();
