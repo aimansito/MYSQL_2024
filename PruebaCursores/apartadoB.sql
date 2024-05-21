@@ -6,7 +6,7 @@ BEGIN
     DECLARE codEntidades INT;
     DECLARE nomEntidades VARCHAR(40);
     DECLARE nomTabla VARCHAR(100);
-    DECLARE codigo INT DEFAULT 0;
+    DECLARE codigo INT;
 
     DECLARE cur_entidades CURSOR FOR
         SELECT codEntidad, nomEntidad FROM Entidades;
@@ -27,11 +27,11 @@ BEGIN
     WHILE var = 0 DO
         BEGIN
             -- Incrementar el código de tabla para cada entidad
-            SET codigo = (select max(codTabla) from nombreEntidades) + 1;
+            SET codigo = (SELECT IFNULL(MAX(codTabla), 0) + 1 FROM nombreEntidades);
 
             -- Eliminar espacios en blanco iniciales en el nombre de la entidad
             SET nomEntidades = LTRIM(nomEntidades);
-            SET nomTabla = CONCAT('tmp_',nomEntidades); 
+            SET nomTabla = CONCAT('tmp_',nomEntidades);
 
             -- Verificar si el nombre de la entidad no es NULL ni vacío
             IF nomTabla IS NOT NULL AND nomTabla <> '' THEN

@@ -1,3 +1,4 @@
+use dawPhoneAiman;
 DROP PROCEDURE IF EXISTS ActualizarEstadoRecibos;
 DELIMITER $$
 CREATE PROCEDURE ActualizarEstadoRecibos()
@@ -11,7 +12,7 @@ BEGIN
         SELECT codCli, codPlan, estadoPlan
         FROM detallePlan; 
 
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finCursor = TRUE;
+    DECLARE CONTINUE HANDLER FOR sqlstate '02000' SET finCursor = true;
 
     OPEN pagos_cursor;
     

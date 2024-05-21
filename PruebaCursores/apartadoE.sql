@@ -1,6 +1,5 @@
 -- Eventos 
 use dawPhoneAiman;
-DROP EVENT EventoRecibos;
 DELIMITER $$
 CREATE EVENT IF NOT EXISTS EventoRecibos
 	ON SCHEDULE 

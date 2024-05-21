@@ -43,4 +43,4 @@ BEGIN
 END$$
 DELIMITER ;
 call insertarDatosTablasTemporales();
-select * from tmp_Caixa;
+drop table nombreEntidades;

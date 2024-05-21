@@ -38,3 +38,4 @@ BEGIN
 END $$
 DELIMITER ;
 call GenerarFicheros();
+select * from nombreEntidades;
