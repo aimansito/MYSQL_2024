@@ -11,6 +11,7 @@ BEGIN
     DECLARE fecha_recibo DATETIME;
     DECLARE numDias INT;
 
+	-- Cojo los datos necesarios para crear el cursor
     DECLARE cliente_cursor CURSOR FOR
         SELECT Clientes.codCli, PlanProducto.importe, detallePlan.fecAltaPlan
         FROM Clientes 
@@ -20,11 +21,13 @@ BEGIN
           AND detallePlan.fecAltaPlan <= CURRENT_DATE()
           AND (detallePlan.fecBajaPlan IS NULL OR detallePlan.fecBajaPlan >= CURRENT_DATE());
 
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finCursor = TRUE;
-
+		DECLARE CONTINUE HANDLER FOR sqlstate '02000' SET finCursor = true;
+        
     OPEN cliente_cursor;
     FETCH cliente_cursor INTO cliente_id, importe, fechaAlta;
 
+	-- bucle donde controla el codigo de la tabla recibo para que no se duplican las keys 
+    -- y además que controle que cobre los días correspondientes según el dia de fecha de alta del plan
     REPEAT
         IF NOT finCursor THEN
             SET fecha_recibo = CURRENT_DATE();

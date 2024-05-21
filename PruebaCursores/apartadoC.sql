@@ -1,9 +1,8 @@
-DELIMITER ;
-call crearTablasTemporales();
+DROP PROCEDURE IF EXISTS insertarDatosTablasTemporales;
 DELIMITER $$
 CREATE PROCEDURE insertarDatosTablasTemporales()
 BEGIN
-    DECLARE var BOOLEAN DEFAULT 0;
+    DECLARE var BOOLEAN DEFAULT false;
     DECLARE codEntidades INT;
     DECLARE nomEntidades VARCHAR(40);
     DECLARE nomTabla VARCHAR(100);
@@ -11,7 +10,7 @@ BEGIN
     DECLARE cur_entidades CURSOR FOR
         SELECT codEntidad, nomEntidad FROM Entidades;
 
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET var = 1;
+    DECLARE CONTINUE HANDLER FOR sqlstate '02000' SET var = true;
 
     OPEN cur_entidades;
 
@@ -34,13 +33,6 @@ BEGIN
                 PREPARE stmt FROM @sql;
                 EXECUTE stmt;
                 DEALLOCATE PREPARE stmt;
-            ELSE
-                -- Manejo de error si el nombre de la entidad es inválido
-                -- (puede registrar el error o simplemente continuar)
-                SET @sql = 'SELECT "Nombre de entidad inválido" AS Error';
-                PREPARE stmt FROM @sql;
-                EXECUTE stmt;
-                DEALLOCATE PREPARE stmt;
             END IF;
 
             FETCH cur_entidades INTO codEntidades, nomEntidades;
@@ -52,4 +44,3 @@ END$$
 DELIMITER ;
 call insertarDatosTablasTemporales();
 select * from tmp_Caixa;
-delete  from tmp_Caixa;

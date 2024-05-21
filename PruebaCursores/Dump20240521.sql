@@ -3,7 +3,8 @@
 -- Host: 192.168.1.170    Database: dawPhoneAiman
 -- ------------------------------------------------------
 -- Server version	8.0.36-0ubuntu0.20.04.1
-
+create database if not exists dawPhoneAiman;
+use dawPhoneAiman;
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -436,66 +437,126 @@ DELIMITER ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
 CREATE DEFINER=`aiman33`@`192.168.1.134` PROCEDURE `generarTablasTemporales`()
-BEGIN
-    DECLARE var BOOLEAN DEFAULT 0;
-    DECLARE codEntidades INT;
-    DECLARE nomEntidades VARCHAR(40);
-    DECLARE nomTabla VARCHAR(100);
-    DECLARE codigo INT DEFAULT 0;
-
-    DECLARE cur_entidades CURSOR FOR
-        SELECT codEntidad, nomEntidad FROM Entidades;
-
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET var = 1;
-
-    -- Crear tabla temporal para almacenar los nombres de las entidades
-    CREATE TEMPORARY TABLE IF NOT EXISTS nombreEntidades (
-        codTabla INT,
-        entidadNom VARCHAR(40),
-        PRIMARY KEY (codTabla)
-    );
-
-    OPEN cur_entidades;
-
-    FETCH cur_entidades INTO codEntidades, nomEntidades;
-
-    WHILE var = 0 DO
-        BEGIN
-            -- Incrementar el código de tabla para cada entidad
-            SET codigo = codigo + 1;
-
-            -- Eliminar espacios en blanco iniciales en el nombre de la entidad
-            SET nomEntidades = LTRIM(nomEntidades);
-            SET nomTabla = CONCAT('tmp_', REPLACE(nomEntidades, ' ', '_')); -- Reemplazar espacios en el nombre de la tabla
-
-            -- Verificar si el nombre de la entidad no es NULL ni vacío
-            IF nomTabla IS NOT NULL AND nomTabla <> '' THEN
-
-                -- Insertar el nombre de la tabla en nombreEntidades
-                INSERT INTO nombreEntidades (codTabla, entidadNom) VALUES (codigo, nomTabla);
-
-                -- Insertar datos en la tabla temporal específica, evitando duplicados
-                SET @sql = CONCAT('INSERT IGNORE INTO `', nomTabla, '` 
-                    SELECT c.codCli, c.nombre, c.ape1cli, c.ape2cli, c.dni, c.cuentaBancaria, r.importeFinal
-                    FROM Clientes c
-                    JOIN Recibos r ON c.codCli = r.codCliente
-                    WHERE c.codEntidad = ', codEntidades, ';');
-                PREPARE stmt FROM @sql;
-                EXECUTE stmt;
-                DEALLOCATE PREPARE stmt;
-            ELSE
-                -- Insertar un mensaje de error si el nombre de la entidad es inválido
-                INSERT INTO nombreEntidades (codTabla, entidadNom) VALUES (codigo, 'Nombre de entidad inválido');
-            END IF;
-
-            FETCH cur_entidades INTO codEntidades, nomEntidades;
-        END;
-    END WHILE;
-
-    CLOSE cur_entidades;
-
-    -- Seleccionar registros para verificación
-    SELECT * FROM nombreEntidades;
+BEGIN
+
+    DECLARE var BOOLEAN DEFAULT 0;
+
+    DECLARE codEntidades INT;
+
+    DECLARE nomEntidades VARCHAR(40);
+
+    DECLARE nomTabla VARCHAR(100);
+
+    DECLARE codigo INT DEFAULT 0;
+
+
+
+    DECLARE cur_entidades CURSOR FOR
+
+        SELECT codEntidad, nomEntidad FROM Entidades;
+
+
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET var = 1;
+
+
+
+    -- Crear tabla temporal para almacenar los nombres de las entidades
+
+    CREATE TEMPORARY TABLE IF NOT EXISTS nombreEntidades (
+
+        codTabla INT,
+
+        entidadNom VARCHAR(40),
+
+        PRIMARY KEY (codTabla)
+
+    );
+
+
+
+    OPEN cur_entidades;
+
+
+
+    FETCH cur_entidades INTO codEntidades, nomEntidades;
+
+
+
+    WHILE var = 0 DO
+
+        BEGIN
+
+            -- Incrementar el código de tabla para cada entidad
+
+            SET codigo = codigo + 1;
+
+
+
+            -- Eliminar espacios en blanco iniciales en el nombre de la entidad
+
+            SET nomEntidades = LTRIM(nomEntidades);
+
+            SET nomTabla = CONCAT('tmp_', REPLACE(nomEntidades, ' ', '_')); -- Reemplazar espacios en el nombre de la tabla
+
+
+
+            -- Verificar si el nombre de la entidad no es NULL ni vacío
+
+            IF nomTabla IS NOT NULL AND nomTabla <> '' THEN
+
+
+
+                -- Insertar el nombre de la tabla en nombreEntidades
+
+                INSERT INTO nombreEntidades (codTabla, entidadNom) VALUES (codigo, nomTabla);
+
+
+
+                -- Insertar datos en la tabla temporal específica, evitando duplicados
+
+                SET @sql = CONCAT('INSERT IGNORE INTO `', nomTabla, '` 
+
+                    SELECT c.codCli, c.nombre, c.ape1cli, c.ape2cli, c.dni, c.cuentaBancaria, r.importeFinal
+
+                    FROM Clientes c
+
+                    JOIN Recibos r ON c.codCli = r.codCliente
+
+                    WHERE c.codEntidad = ', codEntidades, ';');
+
+                PREPARE stmt FROM @sql;
+
+                EXECUTE stmt;
+
+                DEALLOCATE PREPARE stmt;
+
+            ELSE
+
+                -- Insertar un mensaje de error si el nombre de la entidad es inválido
+
+                INSERT INTO nombreEntidades (codTabla, entidadNom) VALUES (codigo, 'Nombre de entidad inválido');
+
+            END IF;
+
+
+
+            FETCH cur_entidades INTO codEntidades, nomEntidades;
+
+        END;
+
+    END WHILE;
+
+
+
+    CLOSE cur_entidades;
+
+
+
+    -- Seleccionar registros para verificación
+
+    SELECT * FROM nombreEntidades;
+
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
