@@ -6,7 +6,7 @@ CREATE TABLE TPV
   idTPV INT auto_increment  NOT NULL,
   ubicacion varchar(100) NOT NULL,
   fechaHora datetime NOT NULL,
-  listaTicketVentas varchar(100) NOT NULL,
+  contraseña varchar(8) not null,
   Constraint pk_tpv PRIMARY KEY (idTPV)
 );
 
@@ -14,7 +14,6 @@ CREATE TABLE Ticket
 (
   idTicket INT auto_increment NOT NULL,
   numPedido INT NOT NULL,
-  listaProducto varchar(100) NOT NULL,
   importeTotal decimal(6,2) NOT NULL,
   fechaHora datetime NOT NULL,
   idTPV INT NOT NULL,
