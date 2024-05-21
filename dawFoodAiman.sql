@@ -14,7 +14,7 @@ CREATE TABLE Ticket
 (
   idTicket INT auto_increment NOT NULL,
   numPedido INT NOT NULL,
-  importeTotal decimal(6,2) NOT NULL,
+  importeTotal decimal(5,2) NOT NULL,
   fechaHora datetime NOT NULL,
   idTPV INT NOT NULL,
   Constraint pk_ticket PRIMARY KEY (idTicket),
