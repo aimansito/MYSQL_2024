@@ -17,9 +17,7 @@ BEGIN
     
     WHILE var = 0 DO
         BEGIN
-         select NomEntidad;
             IF NomEntidad IS NOT NULL AND NomEntidad <> '' THEN
-				select NomEntidad;
                 SET nomBanco = CONCAT('/var/lib/mysql-files/', NomEntidad, '.txt');
 
                 SET @sql = CONCAT('SELECT * FROM `', NomEntidad, '` INTO OUTFILE \'', nomBanco, '\' FIELDS TERMINATED BY \',\' LINES TERMINATED BY \'\n\'');

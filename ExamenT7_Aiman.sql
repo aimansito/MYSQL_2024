@@ -76,19 +76,15 @@ CREATE TRIGGER ej8
 BEFORE UPDATE ON preguntas
 FOR EACH ROW 
 BEGIN
-	IF old.textopreg <> new.textopreg 
-		AND (SELECT count(*) FROM preguntas WHERE codtest = new.codtest and textopreg = new.textopreg) > 0 THEN
-	BEGIN
-		set new.textopreg = old.textopreg;
-		signal sqlstate '01000' set message_text = 'ERROR. esta pregunta ya existe';
-    END;
-    END IF;
-	IF (new.resa <> old.resa or new.resb <> old.resb or new.resc <> old.resc) and 
-		(new.resa = new.resb or new.resb = new.resc or new.resa = new.resc) then
-	BEGIN
-		signal sqlstate '45000' set message_text = 'ERROR,No puede haber dos respuestas iguales en una pregunta.';
-    END;
-    END IF;
+	if old.resa <> new.resa or old.resb <> new.resb or old.resc <> new.resc
+		and (new.resa = new.resb or new.resb = new.resc or new.resa = new.resc) then
+	begin
+		
+		signal sqlstate '70000' set message_text = 'No puede haber dos respuestas iguales en la misma pregunta';
+        
+    end;
+    end if;
+
 END $$
 DELIMITER ; 
 -- ej9
@@ -111,3 +107,11 @@ AS
     ;
     
 SELECT * FROM ej9;
+
+create view misTests
+(codigo, descripcion, materia, numpreguntas, numalumnos)
+as
+	select tests.codtest, tests.descrip, materias.nommateria, count(distinct respuestas.codpregunta), count(distinct respuestas.numexped)
+    from (tests join materias on tests.codmateria = materias.codmateria)
+		left join respuestas on tests.codtest=respuestas.codtest)
+    group by tests.codtest, tests.descrip, materias.nommateria;

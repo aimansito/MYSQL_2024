@@ -5,7 +5,7 @@ CREATE EVENT IF NOT EXISTS EventoRecibos
 	ON SCHEDULE 
 	EVERY 1 MONTH
     STARTS CASE
-			WHEN DAY(CURRENT_DATE()) > 5 THEN CONCAT(YEAR(CURRENT_DATE()), '-', MONTH(CURRENT_DATE()) + 1,':', '-05 15:00:00') 
+			WHEN DAY(CURRENT_DATE()) > 5 THEN CONCAT(YEAR(CURRENT_DATE()), '-', MONTH(CURRENT_DATE()) + 1,':', '-05 5:00:00') 
                 ELSE CONCAT(YEAR(CURRENT_DATE()), '-', MONTH(CURRENT_DATE()), ':','-05 02:00:00')
                 
 			END
@@ -15,6 +15,7 @@ BEGIN
     CALL GenerarRecibosMensuales();
     CALL crearTablasTemporales();
     CALL insertarDatosTablasTemporales();
+    CALL GenerarFicheros();
     CALL ActualizarEstadoRecibos();
 END$$
 DELIMITER ;
