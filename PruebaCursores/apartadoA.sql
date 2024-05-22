@@ -1,4 +1,5 @@
 -- Apartado A
+use dawPhoneAiman;
 DROP PROCEDURE IF EXISTS GenerarRecibosMensuales;
 DELIMITER $$
 CREATE PROCEDURE GenerarRecibosMensuales()
