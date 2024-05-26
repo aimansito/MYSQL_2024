@@ -24,8 +24,8 @@ CREATE TABLE Ticket
 CREATE TABLE tipoProducto
 (
   codTipoProducto INT auto_increment NOT NULL,
-  nomCat enum('COMIDAS','BEBIDAS','POSTRES') NOT NULL,
-  tipoProdDescripcion varchar(100) NOT NULL,
+  tipoCat INT NOT NULL,
+  subCategorias INT NOT NULL,
   constraint pk_tipoprod PRIMARY KEY (codTipoProducto)
 );
 
@@ -34,8 +34,8 @@ CREATE TABLE Producto
   idProducto INT auto_increment NOT NULL,
   IVA enum('21','10') NOT NULL,
   precio decimal(6,2) NOT NULL,
-  stock INT default 0,
-  descripcion varchar(100) NOT NULL,
+  stock INT NOT NULL,
+  descripcion varchar(50) NOT NULL,
   codTipoProducto INT NOT NULL,
   constraint pk_prod PRIMARY KEY (idProducto),
   constraint fk_prod_tipoProd FOREIGN KEY (codTipoProducto) REFERENCES tipoProducto(codTipoProducto)
@@ -43,8 +43,8 @@ CREATE TABLE Producto
 
 CREATE TABLE detalleTicket
 (
-  cantidadProducto INT  auto_increment NOT NULL,
-  idTicket INT NOT NULL,
+  cantidadProducto INT NOT NULL,
+  idTicket INT  NOT NULL,
   idProducto INT NOT NULL,
   Constraint pk_detalleTicket PRIMARY KEY (cantidadProducto),
   Constraint fk_detalleTicket_ticket FOREIGN KEY (idTicket) REFERENCES Ticket(idTicket),
