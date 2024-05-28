@@ -41,14 +41,15 @@ CREATE TABLE Producto
   constraint fk_prod_tipoProd FOREIGN KEY (codTipoProducto) REFERENCES tipoProducto(codTipoProducto)
 );
 
+DROP TABLE detalleTicket;
 CREATE TABLE detalleTicket
 (
-  cantidadProducto INT  auto_increment NOT NULL,
   idTicket INT NOT NULL,
   idProducto INT NOT NULL,
-  Constraint pk_detalleTicket PRIMARY KEY (cantidadProducto),
-  Constraint fk_detalleTicket_ticket FOREIGN KEY (idTicket) REFERENCES Ticket(idTicket),
-  Constraint fk_detalleTicket_prod FOREIGN KEY (idProducto) REFERENCES Producto(idProducto)
+  cantidadProducto INT NOT NULL,
+  CONSTRAINT pk_detalleTicket PRIMARY KEY (idTicket, idProducto),
+  CONSTRAINT fk_detalleTicket_ticket FOREIGN KEY (idTicket) REFERENCES Ticket(idTicket),
+  CONSTRAINT fk_detalleTicket_prod FOREIGN KEY (idProducto) REFERENCES Producto(idProducto)
 );
 
 -- triggers 
