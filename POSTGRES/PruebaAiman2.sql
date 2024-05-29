@@ -1,6 +1,8 @@
 -- las tablas se crean sin herencia ,
 -- con claves foraneas cada una, creamos e insertamos datos en persona
--- luego buscamos esos datos de persona para insertarlas en las clases jugador entrenadorjn
+-- luego buscamos esos datos de persona para insertarlas en las clases jugador entrenador
+-- 1. Implementando la opción A de tu jerarquía de forma que sea total no disjunta.
+
 CREATE TABLE persona (
     id SERIAL,
     nombre VARCHAR(50),
@@ -34,6 +36,9 @@ VALUES
 SELECT id  FROM persona WHERE nombre = 'Pep' AND apellido1 = 'Guardiola' AND apellido2 = 'Sala';
 SELECT id FROM persona WHERE nombre = 'Lionel' AND apellido1 = 'Messi' AND apellido2 = 'Cuccittini';
 
+INSERT INTO jugador(nombre,apellidos,dorsal,idPersona)
+VALUES('Pep','Guardiola','2',2);
+
 INSERT INTO jugador (nombre, apellidos, dorsal, posicion, idPersona) 
 VALUES ('Lionel', 'Messi Cuccittini', '10', 'Delantero', 1);
 SELECT id FROM persona WHERE nombre = 'Pep' AND apellido1 = 'Guardiola' AND apellido2 = 'Sala';
@@ -41,4 +46,27 @@ INSERT INTO entrenador (nombre, apellidos, formacion, idPersona)
 VALUES ('Pep', 'Guardiola Sala', 'Formación 4-3-3', (SELECT id FROM persona WHERE nombre = 'Pep' AND apellido1 = 'Guardiola' AND apellido2 = 'Sala'));
 
 select * from entrenador;
+select * from jugador;
+
+CREATE RULE evitarDuplicacionJugador AS
+ON INSERT TO jugador
+WHERE EXISTS (
+	ON INSERT TO jugador
+	    WHERE EXISTS 
+(SELECT * 
+ FROM jugadores 
+ where jugador.idJugador  = new.idJugador)
+
+)
+DO ALSO NOTHING;
+
+-- Trigger para entrenador
+CREATE RULE evitarDuplicacionEntrenador AS
+ON INSERT TO entrenador
+WHERE EXISTS (
+    SELECT 1
+    FROM jugador
+    WHERE jugador.id = NEW.id
+)
+DO ALSO NOTHING;
 select * from jugador;

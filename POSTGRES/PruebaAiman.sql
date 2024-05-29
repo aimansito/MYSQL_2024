@@ -1,4 +1,6 @@
 
+-- implementando la opción A parcial disjunta.
+
 INSERT INTO jugador (nombre, apellido1, apellido2, fechaNacimiento, dorsal, posicion)
 VALUES ('Lionel', 'Messi', 'Cuccittini', '1987-06-24', '10', 'Delantero');
 
@@ -26,23 +28,28 @@ CREATE TABLE entrenador(
 )inherits(persona);
 
 SELECT * FROM entrenador;
-
--- Trigger para jugador
-CREATE RULE prevent_duplicate_jugador AS
-ON INSERT TO jugador
-WHERE EXISTS (
-    SELECT 1
-    FROM entrenador
-    WHERE entrenador.id = NEW.id
-)
-DO INSTEAD NOTHING;
-
 -- Trigger para entrenador
-CREATE RULE prevent_duplicate_entrenador AS
+CREATE RULE evitarDuplicarEntrenador2 AS
 ON INSERT TO entrenador
 WHERE EXISTS (
-    SELECT 1
+    SELECT *
     FROM jugador
     WHERE jugador.id = NEW.id
 )
 DO INSTEAD NOTHING;
+CREATE RULE evitarDuplicarJugador3 AS
+ON INSERT TO jugador
+WHERE EXISTS (
+    SELECT *
+    FROM entrenador
+    WHERE entrenador.id = NEW.id
+)
+DO INSTEAD NOTHING;
+CREATE RULE evitarPersona2 AS
+	ON INSERT TO persona
+	DO INSTEAD NOTHING;
+INSERT INTO persona (id,nombre, apellido1, apellido2, fechaNacimiento) 
+VALUES 
+(1,'Aiman', 'Harrar', 'Daoud', '1987-06-24');
+select  * from persona;
+select * from persona;

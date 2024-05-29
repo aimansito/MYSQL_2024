@@ -1,4 +1,4 @@
--- 2. Implementando la opción A parcial disjunta. esta jerarquia
+-- 3. Implementa la opción B de tu jerarquía disjunta. En este caso asumimos que es total.
 CREATE TABLE persona (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(50),
@@ -23,6 +23,14 @@ VALUES
 ('Pep', 'Guardiola', 'Sala', '1971-01-18');
 SELECT id FROM persona WHERE nombre = 'Lionel' AND apellido1 = 'Messi' AND apellido2 = 'Cuccittini';
 SELECT id FROM persona WHERE nombre = 'Pep' AND apellido1 = 'Guardiola' AND apellido2 = 'Sala';
+
+INSERT INTO jugador (dorsal, posicion, idPersona) 
+VALUES 
+('10', 'Delantero', 1); -- Usa el id correspondiente a Lionel Messi
+
+INSERT INTO entrenador (formacion, idPersona) 
+VALUES 
+('Táctica avanzada', 2); 
 
 SELECT * FROM jugador;
 SELECT * FROM entrenador;
