@@ -36,7 +36,7 @@ WHERE EXISTS (
     FROM jugador
     WHERE jugador.id = NEW.id
 )
-DO INSTEAD NOTHING;
+DO ALSO NOTHING;
 CREATE RULE evitarDuplicarJugador3 AS
 ON INSERT TO jugador
 WHERE EXISTS (
@@ -44,12 +44,15 @@ WHERE EXISTS (
     FROM entrenador
     WHERE entrenador.id = NEW.id
 )
-DO INSTEAD NOTHING;
+DO ALSO NOTHING;
 CREATE RULE evitarPersona2 AS
 	ON INSERT TO persona
 	DO INSTEAD NOTHING;
-INSERT INTO persona (id,nombre, apellido1, apellido2, fechaNacimiento) 
+INSERT INTO entrenador (id,nombre, apellido1, apellido2, fechaNacimiento,formacion) 
 VALUES 
-(1,'Aiman', 'Harrar', 'Daoud', '1987-06-24');
+(5,'Lionel', 'Messi', 'Cuccitini', '1987-06-24','4-3-3');
+INSERT INTO jugador (id,nombre, apellido1, apellido2, fechaNacimiento,dorsal,posicion) 
+VALUES 
+(5,'Lionel', 'Messi', 'Cuccitini', '1987-06-24','4','ld');
 select  * from persona;
 select * from persona;

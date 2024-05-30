@@ -1,36 +1,58 @@
--- 3. Implementa la opción B de tu jerarquía disjunta. En este caso asumimos que es total.
 CREATE TABLE persona (
-    id SERIAL PRIMARY KEY,
+    id SERIAL,
     nombre VARCHAR(50),
     apellido1 VARCHAR(50),
     apellido2 VARCHAR(50),
-    fechaNacimiento DATE
+    fechaNacimiento DATE,
+	Constraint pk_persona PRIMARY KEY(id)
 );
 CREATE TABLE jugador (
-    idJugador SERIAL PRIMARY KEY,
+    idJugador SERIAL ,
     dorsal VARCHAR(2),
     posicion VARCHAR(50),
-    idPersona INT UNIQUE REFERENCES persona(id) ON DELETE CASCADE
-);
+	Constraint pk_jugador PRIMARY KEY(idJugador)
+)inherits(persona);
 CREATE TABLE entrenador (
-    idEntrenador SERIAL PRIMARY KEY,
+    idEntrenador SERIAL ,
     formacion VARCHAR(100),
-    idPersona INT UNIQUE REFERENCES persona(id) ON DELETE CASCADE
-);
-INSERT INTO persona (nombre, apellido1, apellido2, fechaNacimiento) 
-VALUES 
-('Lionel', 'Messi', 'Cuccittini', '1987-06-24'),
-('Pep', 'Guardiola', 'Sala', '1971-01-18');
-SELECT id FROM persona WHERE nombre = 'Lionel' AND apellido1 = 'Messi' AND apellido2 = 'Cuccittini';
-SELECT id FROM persona WHERE nombre = 'Pep' AND apellido1 = 'Guardiola' AND apellido2 = 'Sala';
+	Constraint pk_entrenador PRIMARY KEY(idEntrenador)
+)inherits(persona);
 
-INSERT INTO jugador (dorsal, posicion, idPersona) 
-VALUES 
-('10', 'Delantero', 1); -- Usa el id correspondiente a Lionel Messi
+CREATE RULE evitarDuplicJugadorB AS
+	ON INSERT TO jugador
+	    WHERE  EXISTS 
+(SELECT * 
+ FROM entrenador 
+ where entrenador.id  = new.id)
 
-INSERT INTO entrenador (formacion, idPersona) 
-VALUES 
-('Táctica avanzada', 2); 
+DO INSTEAD NOTHING;
 
-SELECT * FROM jugador;
-SELECT * FROM entrenador;
+
+CREATE RULE evitarDuplicEntrenadorB AS
+	ON INSERT TO entrenador
+	    WHERE  EXISTS 
+(SELECT * 
+ FROM jugador 
+ where jugador.id  = new.id)
+
+DO INSTEAD NOTHING;
+
+CREATE RULE insertarPersona AS
+	ON INSERT TO persona
+	DO INSTEAD NOTHING;
+
+INSERT INTO jugador
+	(id,nombre,apellido1,apellido2,fechaNacimiento,dorsal,posicion)
+VALUES 
+	(20,'Aiman','Morata','Morata','2024-12-12','9','ld');
+INSERT INTO entrenador
+	(id,nombre,apellido1,apellido2,fechaNacimiento,formacion)
+VALUES 
+	(20,'Aiman','Morata','Morata','2024-12-12','4-3-3');
+
+INSERT INTO persona
+	(nombre,apellido1,apellido2,fechaNacimiento)
+VALUES 
+	('Aiman','Harrar','Daoud','2024-12-12');
+	
+select * from persona;
